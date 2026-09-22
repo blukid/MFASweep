@@ -95,6 +95,9 @@ Function Invoke-MFASweep{
     .PARAMETER Password
     The password for the account you want to authenticate with
 
+    .PARAMETER PasswordFile
+    Use the password stored in text file PasswordFile (avoids leaving password in command history)
+
     .PARAMETER Recon
     When the Recon flag is set the script will attempt to locate ADFS configurations
 
