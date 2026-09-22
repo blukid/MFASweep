@@ -493,7 +493,10 @@ Examples:
         """,
     )
     parser.add_argument("--username", required=True, help="Target email address")
-    parser.add_argument("--password", required=True, help="Password")
+    #parser.add_argument("--password", required=True, help="Password")
+    password_group = parser.add_mutually_exclusive_group(required=True)
+    password_group.add_argument("--password", help="Password")
+    password_group.add_argument("--password-file", help="Path to file containing password")
     parser.add_argument("--recon", action="store_true", help="Perform ADFS recon")
     parser.add_argument(
         "--include-adfs", action="store_true", help="Include ADFS login check"
@@ -517,6 +520,17 @@ Examples:
     )
 
     args = parser.parse_args()
+
+    if args.password_file:
+    try:
+        with open(args.password_file, "r", encoding="utf-8") as f:
+            args.password = f.read().rstrip("\r\n")
+    except OSError as e:
+        parser.error(f"Unable to read password file: {e}")
+
+    if not args.password:
+        parser.error("Password file is empty")
+
     banner()
 
     info(f"Target:      {args.username}")
