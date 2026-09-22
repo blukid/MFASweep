@@ -33,9 +33,9 @@ except ImportError:
     sys.exit(1)
 
 
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 # Constants
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 
 GRAPH_CLIENT_ID = "1b730954-1685-4b74-9bfd-dac224a7b894"  # Azure AD PowerShell
 AZUREMGMT_CLIENT = "1950a258-227b-4e31-a9cf-717495945fc2"  # Azure Management
@@ -119,9 +119,9 @@ BRUTE_COMBOS = [
 tokens_store = []  # Collected tokens/cookies for --write-tokens
 
 
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 # Helpers
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 
 
 def banner():
@@ -147,9 +147,9 @@ def fail(msg):
 
 
 def section(title):
-    print(f"\n\033[1m\033[94m{'─'*55}")
+    print(f"\n\033[1m\033[94m{'-'*55}")
     print(f"  {title}")
-    print(f"{'─'*55}\033[0m")
+    print(f"{'-'*55}\033[0m")
 
 
 def ropc_token(username, password, client_id, resource, scope="openid"):
@@ -188,11 +188,11 @@ def mfa_required(response_json):
 
 def check_ropc(label, username, password, client_id, resource, write_tokens=False):
     section(label)
-    info(f"Attempting ROPC auth → resource: {resource}")
+    info(f"Attempting ROPC auth -> resource: {resource}")
     resp = ropc_token(username, password, client_id, resource)
 
     if "access_token" in resp:
-        ok("Authentication SUCCESS — No MFA enforced!")
+        ok("Authentication SUCCESS - No MFA enforced!")
         if write_tokens:
             tokens_store.append({"service": label, "tokens": resp})
         return True
@@ -202,7 +202,7 @@ def check_ropc(label, username, password, client_id, resource, write_tokens=Fals
     # Credentials valid BUT MFA is required
     mfa_codes = ["AADSTS50076", "AADSTS50079", "AADSTS50074"]
     if any(code in desc for code in mfa_codes):
-        ok(f"Authentication SUCCESS — Credentials valid! NOTE: MFA is enforced.")
+        ok(f"Authentication SUCCESS - Credentials valid! NOTE: MFA is enforced.")
         return False
 
     # Credentials are just wrong / account locked etc.
@@ -212,9 +212,9 @@ def check_ropc(label, username, password, client_id, resource, write_tokens=Fals
     return False
 
 
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 # ADFS Recon
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 
 
 def check_adfs_recon(username):
@@ -237,7 +237,7 @@ def check_adfs_recon(username):
                 ok(f"ADFS Auth URL: {auth_url}")
             return auth_url
         else:
-            info(f"Domain NameSpaceType: {ns_type} — ADFS not detected.")
+            info(f"Domain NameSpaceType: {ns_type} - ADFS not detected.")
     except Exception as e:
         fail(f"ADFS recon failed: {e}")
     return None
@@ -246,7 +246,7 @@ def check_adfs_recon(username):
 def check_adfs_login(username, password, adfs_url):
     section("ADFS Authentication")
     if not adfs_url:
-        warn("No ADFS URL available — skipping ADFS login check.")
+        warn("No ADFS URL available - skipping ADFS login check.")
         return
 
     info(f"Attempting ADFS auth at: {adfs_url}")
@@ -267,7 +267,7 @@ def check_adfs_login(username, password, adfs_url):
             verify=False,
         )
         if r.status_code == 200 and "samlp:Response" in r.text:
-            ok("ADFS Authentication SUCCESS — No MFA enforced!")
+            ok("ADFS Authentication SUCCESS - No MFA enforced!")
         elif r.status_code in (200, 302) and "error" not in r.url.lower():
             ok("ADFS Authentication appears successful (redirect with no error).")
         else:
@@ -278,9 +278,9 @@ def check_adfs_login(username, password, adfs_url):
         fail(f"ADFS login request failed: {e}")
 
 
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 # M365 Web Portal (cookie-based)
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 
 
 def check_m365_portal(username, password, write_tokens=False):
@@ -289,7 +289,7 @@ def check_m365_portal(username, password, write_tokens=False):
 
     session = requests.Session()
 
-    # Step 1 — grab the login page to find the flow URL
+    # Step 1 - grab the login page to find the flow URL
     try:
         init = session.get(
             "https://outlook.office365.com",
@@ -342,7 +342,7 @@ def check_m365_portal(username, password, write_tokens=False):
             )
 
             if "OIDCAuth" in r.url or "outlook.office365.com" in r.url:
-                ok(f"  [{device}] M365 Portal login SUCCESS — No MFA enforced!")
+                ok(f"  [{device}] M365 Portal login SUCCESS - No MFA enforced!")
                 if write_tokens:
                     tokens_store.append(
                         {
@@ -358,14 +358,14 @@ def check_m365_portal(username, password, write_tokens=False):
                     f"  [{device}] Auth failed: {code.group(0) if code else 'AADSTS error'}"
                 )
             else:
-                warn(f"  [{device}] Result unclear — manual verification recommended.")
+                warn(f"  [{device}] Result unclear - manual verification recommended.")
         except Exception as e:
             fail(f"  [{device}] Request error: {e}")
 
 
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 # Exchange Web Services (Basic Auth probe)
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 
 
 def check_ews(username, password):
@@ -375,7 +375,7 @@ def check_ews(username, password):
     try:
         r = requests.get(ews_url, auth=(username, password), timeout=20, verify=False)
         if r.status_code == 200:
-            ok("EWS Authentication SUCCESS — No MFA enforced!")
+            ok("EWS Authentication SUCCESS - No MFA enforced!")
         elif r.status_code == 401:
             # Check WWW-Authenticate header for MFA hints
             www_auth = r.headers.get("WWW-Authenticate", "").lower()
@@ -384,16 +384,16 @@ def check_ews(username, password):
             else:
                 fail("EWS Authentication failed (401 Unauthorized).")
         elif r.status_code == 403:
-            warn("EWS: 403 Forbidden — account may exist but access denied.")
+            warn("EWS: 403 Forbidden - account may exist but access denied.")
         else:
             warn(f"EWS: Unexpected status {r.status_code}")
     except Exception as e:
         fail(f"EWS request failed: {e}")
 
 
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 # ActiveSync
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 
 
 def check_activesync(username, password):
@@ -409,20 +409,20 @@ def check_activesync(username, password):
             as_url, auth=(username, password), headers=headers, timeout=20, verify=False
         )
         if r.status_code == 200:
-            ok("ActiveSync Authentication SUCCESS — No MFA enforced!")
+            ok("ActiveSync Authentication SUCCESS - No MFA enforced!")
         elif r.status_code == 401:
             fail("ActiveSync Authentication failed (401).")
         elif r.status_code == 403:
-            warn("ActiveSync: 403 — may be blocked by policy, not necessarily MFA.")
+            warn("ActiveSync: 403 - may be blocked by policy, not necessarily MFA.")
         else:
             warn(f"ActiveSync: Unexpected status {r.status_code}")
     except Exception as e:
         fail(f"ActiveSync request failed: {e}")
 
 
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 # Brute Client IDs
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 
 
 def invoke_brute_client_ids(username, password, write_tokens=False):
@@ -435,15 +435,15 @@ def invoke_brute_client_ids(username, password, write_tokens=False):
         info(f"Trying: {combo['label']}")
         resp = ropc_token(username, password, combo["client_id"], combo["resource"])
         if "access_token" in resp:
-            ok(f"  SUCCESS — {combo['label']} — No MFA enforced!")
+            ok(f"  SUCCESS - {combo['label']} - No MFA enforced!")
             found.append(combo["label"])
             if write_tokens:
                 tokens_store.append({"service": combo["label"], "tokens": resp})
         elif mfa_required(resp):
-            warn(f"  MFA required — {combo['label']}")
+            warn(f"  MFA required - {combo['label']}")
         else:
             desc = resp.get("error_description", resp.get("error", ""))[:80]
-            fail(f"  Failed — {combo['label']} ({desc})")
+            fail(f"  Failed - {combo['label']} ({desc})")
 
     print()
     if found:
@@ -452,9 +452,9 @@ def invoke_brute_client_ids(username, password, write_tokens=False):
         info("No single-factor access found across all client ID combinations.")
 
 
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 # Summary
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 
 
 def print_summary(results):
@@ -464,7 +464,7 @@ def print_summary(results):
     col2 = 10
 
     print(f"  {'Service':<{col1}}  Result")
-    print(f"  {'─'*col1}  {'─'*col2}")
+    print(f"  {'-'*col1}  {'-'*col2}")
     for svc, status in results:
         color = (
             "\033[92m"
@@ -475,14 +475,14 @@ def print_summary(results):
     print()
 
 
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 # Main
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="MFASweep — Python/Linux port. Check MFA enforcement across Microsoft services.",
+        description="MFASweep - Python/Linux port. Check MFA enforcement across Microsoft services.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -540,12 +540,12 @@ Examples:
 
     results = []
 
-    # ── ADFS Recon ────────────────────────────────
+    # -- ADFS Recon --------------------------------
     adfs_url = None
     if args.recon or args.include_adfs:
         adfs_url = check_adfs_recon(args.username)
 
-    # ── Microsoft Graph API ───────────────────────
+    # -- Microsoft Graph API -----------------------
     ok_graph = check_ropc(
         "Microsoft Graph API",
         args.username,
@@ -556,7 +556,7 @@ Examples:
     )
     results.append(("Graph API", "SUCCESS - No MFA" if ok_graph else "MFA/Failed"))
 
-    # ── Azure Service Management ──────────────────
+    # -- Azure Service Management ------------------
     ok_azure = check_ropc(
         "Azure Service Management API",
         args.username,
@@ -567,7 +567,7 @@ Examples:
     )
     results.append(("Azure Mgmt API", "SUCCESS - No MFA" if ok_azure else "MFA/Failed"))
 
-    # ── Teams ─────────────────────────────────────
+    # -- Teams -------------------------------------
     ok_teams = check_ropc(
         "Microsoft Teams",
         args.username,
@@ -578,7 +578,7 @@ Examples:
     )
     results.append(("Teams", "SUCCESS - No MFA" if ok_teams else "MFA/Failed"))
 
-    # ── Office Apps ───────────────────────────────
+    # -- Office Apps -------------------------------
     ok_office = check_ropc(
         "Office Apps (OneDrive/SharePoint)",
         args.username,
@@ -589,37 +589,37 @@ Examples:
     )
     results.append(("Office Apps", "SUCCESS - No MFA" if ok_office else "MFA/Failed"))
 
-    # ── EWS ───────────────────────────────────────
+    # -- EWS ---------------------------------------
     if not args.skip_ews:
         check_ews(args.username, args.password)
         results.append(("EWS", "See output above"))
 
-    # ── ActiveSync ────────────────────────────────
+    # -- ActiveSync --------------------------------
     if not args.skip_activesync:
         check_activesync(args.username, args.password)
         results.append(("ActiveSync", "See output above"))
 
-    # ── M365 Web Portal ───────────────────────────
+    # -- M365 Web Portal ---------------------------
     if not args.skip_portal:
         check_m365_portal(args.username, args.password, write_tokens=args.write_tokens)
         results.append(("M365 Portal (7 agents)", "See output above"))
 
-    # ── ADFS Login ────────────────────────────────
+    # -- ADFS Login --------------------------------
     if args.include_adfs:
         check_adfs_login(args.username, args.password, adfs_url)
         results.append(("ADFS", "See output above"))
 
-    # ── Brute Client IDs ──────────────────────────
+    # -- Brute Client IDs --------------------------
     if args.brute_client_ids:
         invoke_brute_client_ids(
             args.username, args.password, write_tokens=args.write_tokens
         )
         results.append(("BruteClientIDs", "See output above"))
 
-    # ── Summary ───────────────────────────────────
+    # -- Summary -----------------------------------
     print_summary(results)
 
-    # ── Write Tokens ──────────────────────────────
+    # -- Write Tokens ------------------------------
     if args.write_tokens and tokens_store:
         out_file = "AccessTokens.json"
         with open(out_file, "w") as f:
