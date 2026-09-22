@@ -126,9 +126,12 @@ Function Invoke-MFASweep{
     [string]
     $Username = "",
 
-    [Parameter(Position = 1, Mandatory = $True)]
+    [Parameter(Position = 1, Mandatory = $False)]
     [string]
     $Password = "",
+
+    [string]
+    $PasswordFilePath = "",
     
     [Parameter(Position = 2, Mandatory = $False)]
     [Switch]
@@ -151,6 +154,10 @@ Function Invoke-MFASweep{
     $DebugUserAgent = "iPhone"
     
     )
+
+    if ($PasswordFilePath) {
+        $Password = (Get-Content -LiteralPath $PasswordFilePath -Raw).TrimEnd("`r", "`n")
+    }
 
     Write-Host "---------------- MFASweep ----------------"
     $Tab = [char]9
